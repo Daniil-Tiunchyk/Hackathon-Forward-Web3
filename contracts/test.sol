@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/**
+ * @title Crowdfunding
+ * @dev A smart contract for crowdfunding campaigns.
+ */
 contract Crowdfunding {
     // Address of the contract creator
     address public owner;
@@ -38,17 +42,23 @@ contract Crowdfunding {
         _;
     }
 
-    // Contract constructor
-    constructor(uint goalInEther, uint fundingDurationInMinutes) payable {
-        duration = fundingDurationInMinutes * 1 minutes;
+    /**
+     * @dev Contract constructor.
+     * @param goalInEther The fundraising goal in Ether.
+     * @param fundingDurationInMinutes The duration of the fundraising campaign in days
+     */
+    constructor(uint goalInEther, uint fundingDurationInDays) payable {
+        duration = fundingDurationInDays * 1 days;
         expiredAt = block.timestamp + duration;
         owner = msg.sender;
         goal = goalInEther * 1 ether;
     }
 
+    /**
+     * @dev Allows a participant to contribute funds to the crowdfunding campaign.
+     */
     function contribute() external payable fundingOpen {
         require(msg.value > 0, "Contribution amount must be greater than 0");
-
         // Cache the value of contributors[msg.sender]
         uint contributionAmount = contributors[msg.sender];
         // Update the value of contributors[msg.sender]
@@ -63,19 +73,26 @@ contract Crowdfunding {
         emit FundTransfer(msg.sender, msg.value, true);
     }
 
-    // Function for withdrawing the raised funds to the contract owner's address
-    function withdrawFunds() external payable onlyOwner fundingOpen {
-        payable(owner).transfer(selfbalance());
-        emit FundTransfer(owner, selfbalance(), false);
+    /**
+     * @dev Allows the contract owner to withdraw the raised funds to their address.
+     */
+    function withdrawFunds() external onlyOwner fundingOpen {
+        uint contractBalance = address(this).balance;
+        payable(owner).transfer(contractBalance);
+        emit FundTransfer(owner, contractBalance, false);
     }
 
-    // Function for closing the fundraising
-    function closeContract() external payable onlyOwner {
+    /**
+     * @dev Closes the fundraising campaign.
+     */
+    function closeContract() external onlyOwner {
         require(block.timestamp > expiredAt, "Funding is not yet expired");
         isClosed = true;
     }
 
-    // Function for refunding contributions if the fundraising goal is not reached
+    /**
+     * @dev Refunds a participant's contribution if the fundraising goal is not reached.
+     */
     function refund() external fundingOpen {
         require(block.timestamp > expiredAt, "Funding is not yet expired");
         uint amountToRefund = contributors[msg.sender];
@@ -86,27 +103,42 @@ contract Crowdfunding {
         emit FundTransfer(msg.sender, amountToRefund, false);
     }
 
-    // Function to get the contract balance
+    /**
+     * @dev Retrieves the contract balance.
+     * @return The balance of the contract in wei.
+     */
     function getContractBalance() external view returns (uint) {
-        return selfbalance();
+        return address(this).balance;
     }
 
-    // Function to get the total raised amount
+    /**
+     * @dev Retrieves the total amount raised in the campaign.
+     * @return The total amount raised in wei.
+     */
     function getTotalRaisedAmount() external view returns (uint) {
         return raisedAmount;
     }
 
-    // Function to get a contributor's contribution amount
+    /**
+     * @dev Retrieves a participant's contribution amount.
+     * @return The contribution amount of the caller in wei.
+     */
     function getContribution() external view returns (uint) {
         return contributors[msg.sender];
     }
 
-    // Function to get the fundraising duration
+    /**
+     * @dev Retrieves the duration of the fundraising campaign.
+     * @return The duration of the campaign in seconds.
+     */
     function getDuration() external view returns (uint) {
         return duration;
     }
 
-    // Function to check if the fundraising is closed
+    /**
+     * @dev Checks if the fundraising campaign is closed.
+     * @return A boolean indicating whether the campaign is closed.
+     */
     function isFundingClosed() external view returns (bool) {
         return isClosed;
     }
