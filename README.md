@@ -8,6 +8,8 @@ To review our progress on Checkpoint #1, please follow the link to our Google Do
 
 To review our smart contract implementation for Checkpoint #2, please follow the link to our Google Docs: [Checkpoint #2 Link](https://docs.google.com/document/d/1k1I9rhdx6CZPfhvV3q4XKDxBevuCcuUQPZgQrRuPsxQ/edit?usp=sharing)
 
+For Checkpoint #3, we have completed the interface design for our DApp and admin panel. You can view the interface designs on Figma using the following link: [Figma Interface Designs](https://www.figma.com/file/pbrWBZI1gKgpiW2PqZuBR9/Forward?type=design&node-id=0%3A1&mode=design&t=12wWxOQ37jbG99UX-1)
+
 Thank you for your interest in our project! We look forward to further collaboration and the opportunity to present you with a complete crowdfunding platform. If you have any questions or suggestions, feel free to reach out to us.
 
 Telegram: Contact @fcad_daniil
@@ -27,3 +29,4 @@ If you have any questions, suggestions, or simply want to get in touch with us, 
 - Telegram: [@fcad_daniil](https://t.me/fcad_daniil)
 
 Thank you for your attention! We eagerly await the opportunity to collaborate and work together on our project.
+
