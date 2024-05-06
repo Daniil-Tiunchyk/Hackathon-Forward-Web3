@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 /**
@@ -15,14 +14,20 @@ contract Crowdfunding {
     // Amount of funds raised (in wei)
     uint public raisedAmount;
 
-    // Flag indicating whether fundraising is closed
-    bool public isClosed;
-
     // Duration of fundraising (in seconds)
     uint public duration;
 
     // Timestamp of fundraising end
     uint public immutable expiredAt;
+
+    // Name of the campaign
+    string public name;
+
+    // Description of the campaign
+    string public description;
+
+    // Category of the campaign
+    string public category;
 
     // Mapping storing contributions of each participant
     mapping(address => uint) public contributors;
@@ -38,16 +43,26 @@ contract Crowdfunding {
 
     // Modifier allowing function execution only when fundraising is open
     modifier fundingOpen() {
-        require(!isClosed, "Funding is closed");
+        require(block.timestamp < expiredAt, "Funding is not yet expired");
         _;
     }
 
-    /**
-     * @dev Contract constructor.
-     * @param goalInEther The fundraising goal in Ether.
-     * @param fundingDurationInMinutes The duration of the fundraising campaign in days
-     */
-    constructor(uint goalInEther, uint fundingDurationInDays) payable {
+    // Modifier allowing function execution only when fundraising is closed
+    modifier fundingClosed() {
+        require(block.timestamp > expiredAt, "Funding is not yet expired");
+        _;
+    }
+
+    constructor(
+        string memory _name,
+        string memory _description,
+        string memory _category,
+        uint goalInEther,
+        uint fundingDurationInDays
+    ) {
+        name = _name;
+        description = _description;
+        category = _category;
         duration = fundingDurationInDays * 1 days;
         expiredAt = block.timestamp + duration;
         owner = msg.sender;
@@ -62,10 +77,10 @@ contract Crowdfunding {
         // Cache the value of contributors[msg.sender]
         uint contributionAmount = contributors[msg.sender];
         // Update the value of contributors[msg.sender]
-        contributionAmount = contributionAmount + msg.value;
+        contributionAmount += msg.value;
 
         // Update the value of raisedAmount
-        raisedAmount = raisedAmount + msg.value;
+        raisedAmount += msg.value;
 
         // Update the value of contributors[msg.sender]
         contributors[msg.sender] = contributionAmount;
@@ -76,29 +91,20 @@ contract Crowdfunding {
     /**
      * @dev Allows the contract owner to withdraw the raised funds to their address.
      */
-    function withdrawFunds() external onlyOwner fundingOpen {
+    function withdrawFunds() external onlyOwner fundingClosed {
         uint contractBalance = address(this).balance;
         payable(owner).transfer(contractBalance);
         emit FundTransfer(owner, contractBalance, false);
     }
 
     /**
-     * @dev Closes the fundraising campaign.
-     */
-    function closeContract() external onlyOwner {
-        require(block.timestamp > expiredAt, "Funding is not yet expired");
-        isClosed = true;
-    }
-
-    /**
      * @dev Refunds a participant's contribution if the fundraising goal is not reached.
      */
     function refund() external fundingOpen {
-        require(block.timestamp > expiredAt, "Funding is not yet expired");
         uint amountToRefund = contributors[msg.sender];
         require(amountToRefund > 0, "No contribution to refund");
         contributors[msg.sender] = 0;
-        raisedAmount = raisedAmount - amountToRefund;
+        raisedAmount -= amountToRefund;
         payable(msg.sender).transfer(amountToRefund);
         emit FundTransfer(msg.sender, amountToRefund, false);
     }
@@ -140,6 +146,61 @@ contract Crowdfunding {
      * @return A boolean indicating whether the campaign is closed.
      */
     function isFundingClosed() external view returns (bool) {
-        return isClosed;
+        return block.timestamp > expiredAt;
+    }
+}
+
+contract CrowdfundingFactory {
+    Crowdfunding[] public crowdfundingContracts;
+    event CrowdfundingCreated(Crowdfunding crowdfunding);
+
+    address private factoryOwner;
+    address public factoryAddress;
+
+    constructor() {
+        factoryOwner = msg.sender;
+        factoryAddress = address(this); // Set the factory address
+    }
+
+    function createCrowdfunding(
+        string memory name,
+        string memory description,
+        string memory category,
+        uint goalInEther,
+        uint fundingDurationInDays
+    ) external {
+        // Check if factory contract is already created
+        if (factoryAddress != address(0)) {
+            // Factory contract already exists, no need to create a new one
+            Crowdfunding crowdfunding = new Crowdfunding(
+                name,
+                description,
+                category,
+                goalInEther,
+                fundingDurationInDays
+            );
+            crowdfundingContracts.push(crowdfunding);
+            emit CrowdfundingCreated(crowdfunding);
+        } else {
+            // Factory contract doesn't exist, create a new one
+            factoryAddress = address(this);
+            Crowdfunding crowdfunding = new Crowdfunding(
+                name,
+                description,
+                category,
+                goalInEther,
+                fundingDurationInDays
+            );
+            crowdfundingContracts.push(crowdfunding);
+            emit CrowdfundingCreated(crowdfunding);
+        }
+    }
+
+    function getCrowdfundingContracts()
+        external
+        view
+        returns (Crowdfunding[] memory)
+    {
+        return crowdfundingContracts;
     }
 }
